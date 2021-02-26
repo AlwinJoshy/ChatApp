@@ -5,14 +5,45 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
+using ChatApp.Classes;
 
 namespace ChatApp
 {
+    public class testClass
+    {
+        public string name;
+        public int count;
+    }
+
     class Program
     {
+
+        public static byte[] ObjectToByte(object obj) 
+        {
+            BinaryFormatter bFormatter = new BinaryFormatter();
+
+            using (MemoryStream ms = new MemoryStream()) {
+
+                bFormatter.Serialize(ms, obj);
+                return ms.ToArray();
+            }
+        }
+
+        public static object ByteToObject(byte[] byteArray)
+        {
+            BinaryFormatter bFormatter = new BinaryFormatter();
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(byteArray, 0, byteArray.Length);
+                return bFormatter.Deserialize(ms);
+            }
+        }
+
         static void Main(string[] args)
         {
-
+            
             if (args.Length > 0)
             {
 
@@ -20,47 +51,49 @@ namespace ChatApp
                 {
 
                     case "-server":
-                        
-                        Socket listeningSocket = new Socket(
-                        AddressFamily.InterNetwork,
-                        SocketType.Stream, // use Dragram to use UDP
-                        ProtocolType.Tcp);
 
-                        listeningSocket.Bind(new IPEndPoint(IPAddress.Any, 4432));
-                        Console.WriteLine("Waiting for connections...");
-                        listeningSocket.Listen(5);
+                        int portNumber = -1;
 
-                        Socket clientSocket = listeningSocket.Accept(); // new connection socket
+                        if (args.Length >= 2) {
+                            bool isPortValid = int.TryParse(args[1], out portNumber);
+                            if (!isPortValid) throw new Exception("Port number is not valid");
+                        }
 
-                        clientSocket.Send(ASCIIEncoding.ASCII.GetBytes("Hello Client..."));
+                        else
+                        {
+                            throw new Exception("the arguments are not sufficent");
+                        }
 
-                        Byte[] reciveBuffer = new byte[1024];
-                        clientSocket.Receive(reciveBuffer);
-
-                        Console.WriteLine(ASCIIEncoding.ASCII.GetString(reciveBuffer));
-
+                        Server ChatServer = new Server(4432);
+                        ChatServer.Run();
                         break;
 
                     case "-client":
 
-                        Socket socket;
-                        socket = new Socket(
-                            AddressFamily.InterNetwork,
-                            SocketType.Stream,
-                            ProtocolType.Tcp);
+                        IPAddress ipAddress;
+                        int portClientNumber = -1;
 
-                        Console.WriteLine("Connecting to server...");
-                        socket.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 4432));
-                        Console.WriteLine("Connected to server...");
+                        if (args.Length >= 3)
+                        {
 
-                        Byte[] reciveBufferBytes = new byte[1024];
-                        socket.Receive(reciveBufferBytes);
+                            bool ipAddressValid = IPAddress.TryParse(args[1], out ipAddress);
+                            bool isPortValid = int.TryParse(args[2], out portClientNumber);
 
-                        Console.WriteLine(ASCIIEncoding.ASCII.GetString(reciveBufferBytes));
+                            if (!isPortValid) throw new Exception("Port number is not valid");
 
-                        socket.Send(ASCIIEncoding.ASCII.GetBytes("Hello Server..."));
+                            if (!ipAddressValid) throw new Exception("IP address is not valid");
+                        }
 
+                        else {
+                            throw new Exception("the arguments are not sufficent");
+                        }
+
+                        Client ChatClient = new Client(ipAddress, portClientNumber);
+                        ChatClient.Run();
+                 
                         break;
+
+
 
                     default:
                         Console.WriteLine("Please provide arguments...");
