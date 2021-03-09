@@ -25,10 +25,10 @@ namespace ChatApp.Classes
         public Client(IPAddress ipAddress, int portNumber)
         {
 
-            socket = new Socket(
-                AddressFamily.InterNetwork,
-                SocketType.Stream,
-                ProtocolType.Tcp);
+            socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+            socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
+
+            socket.SetIPProtectionLevel(IPProtectionLevel.Unrestricted);
 
             DisplayAndShowAskeColor();
 

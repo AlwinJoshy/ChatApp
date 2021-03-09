@@ -9,6 +9,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using ChatApp.Classes;
 
+
 namespace ChatApp
 {
     public class testClass
@@ -41,6 +42,13 @@ namespace ChatApp
             }
         }
 
+        static async Task StartServerAsync()
+        {
+            Server ChatServer = new Server(4432);
+            await Task.Delay(1000);
+            ChatServer.Run();
+        }
+
         static void Main(string[] args)
         {
             
@@ -64,8 +72,12 @@ namespace ChatApp
                             throw new Exception("the arguments are not sufficent");
                         }
 
-                        Server ChatServer = new Server(4432);
-                        ChatServer.Run();
+                        StartServerAsync();
+
+                        while (true) {
+                            // a locking while
+                        }
+
                         break;
 
                     case "-client":

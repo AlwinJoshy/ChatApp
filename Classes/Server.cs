@@ -7,13 +7,18 @@ using System.Net.Sockets;
 using System.Net;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using System.Threading;
+using Open.Nat;
 
 namespace ChatApp.Classes
 {
+
     public class Server
     {
-
+        /// UPnP stuff
+        int portNumber = -1111;
         int initialAttemptMaxCount = 100;
+        public bool UPnpPunchThrough = false;
 
         List<Socket> socketConnections = new List<Socket>();
         List<string> userDetails = new List<string>();
@@ -21,13 +26,54 @@ namespace ChatApp.Classes
 
         Byte[] reciveBuffer = new byte[1024];
         Socket listeningSocket;
+
+        // open nat test
+        public async Task GetExternalIP(int privetPort)
+        {
+            var discoverer = new NatDiscoverer();
+
+            var device = await discoverer.DiscoverDeviceAsync();
+
+            // display the NAT's IP address
+            Console.WriteLine("The external IP Address is: {0} ", await device.GetExternalIPAsync());
+
+
+            // setting external to 420
+            await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, privetPort, 5040, "For testing"));
+
+            var cts = new CancellationTokenSource(8000);
+
+            // we are only interested in Upnp NATs because PMP protocol doesn't allow to list mappings
+            var newDevice = await discoverer.DiscoverDeviceAsync(PortMapper.Upnp, cts);
+
+            foreach (var mapping in await newDevice.GetAllMappingsAsync())
+            {
+                Console.WriteLine(mapping);
+              //  await device.DeletePortMapAsync(mapping);
+            }
+
+
+
+            UPnpPunchThrough = true;
+        }
+
         public Server(int portNumber)
         {
+            this.portNumber = portNumber;
+            StartServer();
+        }
 
-            listeningSocket = new Socket(
-           AddressFamily.InterNetwork,
-           SocketType.Stream, // use Dragram to use UDP
-           ProtocolType.Tcp);
+        async Task StartServer() {
+
+            //  UPnPPunchthrough monoUPnP = new UPnPPunchthrough(4432, 500);
+
+            // open nat test
+            await GetExternalIP(portNumber);
+
+            listeningSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+            listeningSocket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
+
+            listeningSocket.SetIPProtectionLevel(IPProtectionLevel.Unrestricted);
 
             listeningSocket.Blocking = false;// sets the socket unblocking
 
@@ -38,7 +84,7 @@ namespace ChatApp.Classes
 
         public void Run()
         {
-
+            Console.WriteLine("Running...");
             while (true)
             {
                 try
@@ -95,8 +141,6 @@ namespace ChatApp.Classes
                 }
 
 
-
-
                 for (int i = 0; i < socketConnections.Count; i++)
                 {
                     try
@@ -124,7 +168,7 @@ namespace ChatApp.Classes
                             // notify diconnetion of the server
                             SendDataToAll(socketConnections, -1, sendData);
 
-                            Console.WriteLine("userDetails[i] Removed");
+                            Console.WriteLine($"{userDetails[i]} Removed..");
                             userDetails.RemoveAt(i);
                         }
 
@@ -167,6 +211,4 @@ namespace ChatApp.Classes
         }
 
     }
-
-
 }
