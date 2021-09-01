@@ -42,16 +42,47 @@ namespace ChatApp
             }
         }
 
-        static async Task StartServerAsync()
+        static async Task StartServerAsync(int portNumber)
         {
-            Server ChatServer = new Server(4432);
+            Server ChatServer = new Server(portNumber);
             await Task.Delay(1000);
             ChatServer.Run();
         }
 
         static void Main(string[] args)
         {
-            
+            if (args.Length == 0)
+            {
+                args = new string[4];
+                Console.WriteLine("Pick Type");
+                Console.WriteLine("Server : 0");
+                Console.WriteLine("Client : 1");
+
+                int typeID = int.Parse(Console.ReadLine());
+
+                args[0] = typeID == 0 ? "-server" : "-client";
+
+
+                if (typeID == 0)
+                {
+
+                    Console.WriteLine("Enter Port Number eg 4432");
+                    args[1] = Console.ReadLine();
+
+                }
+                else {
+
+                    Console.WriteLine("Enter Server IP eg 127.0.0.1");
+                    args[1] = Console.ReadLine();
+
+                    Console.WriteLine("Enter Port Number eg 4432");
+                    args[2] = Console.ReadLine();
+
+                }
+
+            }
+
+
             if (args.Length > 0)
             {
 
@@ -72,13 +103,12 @@ namespace ChatApp
                             throw new Exception("the arguments are not sufficent");
                         }
 
-                        StartServerAsync();
+                        _ = StartServerAsync(portNumber);
 
                         while (true) {
                             // a locking while
                         }
 
-                        break;
 
                     case "-client":
 
